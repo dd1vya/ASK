@@ -2,8 +2,9 @@
 # Aim
 Write a simple Python program for the modulation and demodulation of ASK and FSK.
 # Tools required
+Google Colab
 # Program
-# ASK
+### ASK
 ```
 import numpy as np
 import matplotlib.pyplot as plt
@@ -52,7 +53,7 @@ plt.title('Decoded Bits')
 plt.tight_layout()
 plt.show()
 ```
-# FSK
+### FSK
 ```
 import numpy as np
 import matplotlib.pyplot as plt
