@@ -133,10 +133,10 @@ plt.tight_layout()
 plt.show()
 ```
 # Output Waveform
-# ASK
+## ASK
 
 
-# FSK
+## FSK
 
 
 
