@@ -5,133 +5,127 @@
  Google coLab
 # Program
 # ASK
-```py
+```
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import butter, lfilter
-# Butterworth low-pass filter for demodulation
-def butter_lowpass_filter(data, cutoff, fs, order=5):
-    nyquist = 0.5 * fs
-    normal_cutoff = cutoff / nyquist
-    b, a = butter(order, normal_cutoff, btype='low', analog=False)
-    return lfilter(b, a, data)
-# Parameters
-fs = 1000
-f_carrier = 50
-bit_rate = 10
-T = 1
-t = np.linspace(0, T, int(fs * T), endpoint=False)
-# Message signal (binary data)
-bits = np.random.randint(0, 2, bit_rate)
-bit_duration = fs // bit_rate
-message_signal = np.repeat(bits, bit_duration)
-# Carrier signal
-carrier = np.sin(2 * np.pi * f_carrier * t)
-# ASK Modulation
-ask_signal = message_signal * carrier
-# ASK Demodulation
-demodulated = ask_signal * carrier
-filtered_signal = butter_lowpass_filter(demodulated, f_carrier, fs)
-decoded_bits = (filtered_signal[::bit_duration] > 0.25).astype(int)
-# Plotting
-plt.figure(figsize=(12, 8))
-plt.subplot(4, 1, 1)
-plt.plot(t, message_signal, label='Message Signal (Binary)', color='b')
-plt.title('Message Signal')
-plt.grid(True)
-plt.subplot(4, 1, 2)
-plt.plot(t, carrier, label='Carrier Signal', color='g')
-plt.title('Carrier Signal')
-plt.grid(True)
-plt.subplot(4, 1, 3)
-plt.plot(t, ask_signal, label='ASK Modulated Signal', color='r')
-plt.title('ASK Modulated Signal')
-plt.grid(True)
-plt.subplot(4, 1, 4)
-plt.step(np.arange(len(decoded_bits)), decoded_bits, label='Decoded Bits', color='r',
-marker='x')
-plt.title('Decoded Bits')
+
+fs, fc, br = 1000, 50, 10
+t = np.linspace(0, 1, fs, endpoint=False)
+
+bits = np.random.randint(0,2,br)
+
+spb = fs // br
+m = np.repeat(bits, spb)
+
+c = np.sin(2*np.pi*fc*t)
+ask = m * c
+
+dem = ask * c
+b, a = butter(5, fc/(fs/2))
+f = lfilter(b, a, dem)
+
+dec = (f[::spb] > 0.25).astype(int)
+
+plt.figure(figsize=(12,8))
+
+plt.subplot(4,1,1)
+plt.plot(t, m)
+plt.title("Message Signal")
+plt.grid()
+
+plt.subplot(4,1,2)
+plt.plot(t, c)
+plt.title("Carrier Signal")
+plt.grid()
+
+plt.subplot(4,1,3)
+plt.plot(t, ask)
+plt.title("ASK Modulated Signal")
+plt.grid()
+
+plt.subplot(4,1,4)
+plt.step(np.arange(len(dec)), dec, marker='x')
+plt.title("Decoded Bits")
+plt.grid()
+
 plt.tight_layout()
 plt.show()
 ```
 # FSK
-```py
+```
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import butter, lfilter
-# Butterworth Lowpass Filter Function
-def butter_lowpass_filter(data, cutoff, fs, order=5):
-    nyquist = 0.5 * fs
-    normal_cutoff = cutoff / nyquist
-    b, a = butter(order, normal_cutoff, btype='low', analog=False)
-    return lfilter(b, a, data)
-# Parameters
-fs = 1000
-f1 = 30
-f2 = 70
-bit_rate = 10
-T = 1
-t = np.linspace(0, T, int(fs * T), endpoint=False)
-# Message Signal Generation
-bits = np.random.randint(0, 2, bit_rate)
-bit_duration = fs // bit_rate
-message_signal = np.repeat(bits, bit_duration)
-# Carrier Signals
-carrier_f1 = np.sin(2 * np.pi * f1 * t)
-carrier_f2 = np.sin(2 * np.pi * f2 * t)
-# FSK Modulation
-fsk_signal = np.zeros_like(t)
-for i, bit in enumerate(bits):
-    start = i * bit_duration
-    end = start + bit_duration
-    freq = f2 if bit == 1 else f1
-    fsk_signal[start:end] = np.sin(2 * np.pi * freq * t[start:end])
-# Demodulation using Correlation
-ref_f1 = np.sin(2 * np.pi * f1 * t)
-ref_f2 = np.sin(2 * np.pi * f2 * t)
-corr_f1 = butter_lowpass_filter(fsk_signal * ref_f1, f1, fs)
-corr_f2 = butter_lowpass_filter(fsk_signal * ref_f2, f2, fs)
-decoded_bits = []
-for i in range(bit_rate):
-    start = i * bit_duration
-    end = start + bit_duration
-    energy_f1 = np.sum(corr_f1[start:end] ** 2)
-    energy_f2 = np.sum(corr_f2[start:end] ** 2)
-    decoded_bits.append(1 if energy_f2 > energy_f1 else 0)
-decoded_bits = np.array(decoded_bits)
-demodulated_signal = np.repeat(decoded_bits, bit_duration)
-# Plotting
-plt.figure(figsize=(12, 12))
-plt.subplot(6, 1, 1)
-plt.plot(t, message_signal, color='b')
+
+fs, f1, f2, br = 1000, 30, 70, 10
+t = np.linspace(0, 1, fs, endpoint=False)
+
+bits = np.random.randint(0, 2, br)
+spb = fs // br
+m = np.repeat(bits, spb)
+
+c1 = np.sin(2*np.pi*f1*t)
+c2 = np.sin(2*np.pi*f2*t)
+
+fsk = np.zeros_like(t)
+for i, b in enumerate(bits):
+    s = i * spb
+    fsk[s:s+spb] = np.sin(2*np.pi*(f2 if b else f1)*t[s:s+spb])
+
+b, a = butter(5, f2/(fs/2))
+c1d = lfilter(b, a, fsk * c1)
+c2d = lfilter(b, a, fsk * c2)
+
+dec = []
+for i in range(br):
+    s = i * spb
+    e1 = np.sum(c1d[s:s+spb]**2)
+    e2 = np.sum(c2d[s:s+spb]**2)
+    dec.append(e2 > e1)
+
+dec = np.array(dec).astype(int)
+dem = np.repeat(dec, spb)
+
+plt.figure(figsize=(12,12))
+
+plt.subplot(6,1,1)
+plt.plot(t, m)
 plt.title('Message Signal')
-plt.grid(True)
-plt.subplot(6, 1, 2)
-plt.plot(t, carrier_f1, color='g')
+plt.grid()
+
+plt.subplot(6,1,2)
+plt.plot(t, c1)
 plt.title('Carrier Signal for bit 0 (f1)')
-plt.grid(True)
-plt.subplot(6, 1, 3)
-plt.plot(t, carrier_f2, color='r')
+plt.grid()
+
+plt.subplot(6,1,3)
+plt.plot(t, c2)
 plt.title('Carrier Signal for bit 1 (f2)')
-plt.grid(True)
-plt.subplot(6, 1, 4)
-plt.plot(t, fsk_signal, color='m')
+plt.grid()
+
+plt.subplot(6,1,4)
+plt.plot(t, fsk)
 plt.title('FSK Modulated Signal')
-plt.grid(True)
-plt.subplot(6, 1, 5)
-plt.plot(t, demodulated_signal, color='k')
+plt.grid()
+
+plt.subplot(6,1,5)
+plt.plot(t, dem)
 plt.title('Final Demodulated Signal')
-plt.grid(True)
+plt.grid()
+
 plt.tight_layout()
 plt.show()
 ```
 # Output Waveform
 # ASK
-![WhatsApp Image 2026-03-13 at 2 06 19 PM](https://github.com/user-attachments/assets/520044b6-56bd-41dd-bbfe-1022f78c1f53)
+<img width="1190" height="790" alt="image" src="https://github.com/user-attachments/assets/175ca794-a682-47b3-9b0f-137cbe14f1db" />
+
 
 
 # FSK
-<img width="963" height="814" alt="image" src="https://github.com/user-attachments/assets/a2ca6366-659a-4b08-84bb-4808c375703f" />
+<img width="1201" height="1012" alt="image" src="https://github.com/user-attachments/assets/40059f96-793c-408f-b773-a6f281a54603" />
+
 
 
 # Results
